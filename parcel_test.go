@@ -54,26 +54,21 @@ func TestParcelTestSuite(t *testing.T) {
 }
 
 // TestAddGetDelete проверяет добавление, получение и удаление посылки
-func (suite *ParcelTestSuite) TestAddGetDelete() { //t *testing.T) {
-	// prepare
-	//db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
-	//require.NoErrorf(t, err, "unable to open DBMS connection, err=%v", err)
-	//defer db.Close()
-
+func (suite *ParcelTestSuite) TestAddGetDelete() {
 	store := NewParcelStore(suite.db)
 	expectedParcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	id, err := store.Add(expectedParcel)
-	suite.Require().NoErrorf(err, "unable to add new parcel, err=%v", err)
-	suite.Require().Greaterf(id, 0, "invalid parcel id=%d", id)
+	suite.Require().NoErrorf(err, "unable to add new parcel, err=%w", err)
+	suite.Require().NotEmptyf(id, "invalid parcel id=%d", id)
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной expectedParcel
 	actualParcel, err := store.Get(id)
-	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%v", id, err)
+	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%w", id, err)
 	suite.Assert().Equal(expectedParcel.Client, actualParcel.Client)
 	suite.Assert().Equal(expectedParcel.Status, actualParcel.Status)
 	suite.Assert().Equal(expectedParcel.Address, actualParcel.Address)
@@ -82,77 +77,66 @@ func (suite *ParcelTestSuite) TestAddGetDelete() { //t *testing.T) {
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	err = store.Delete(id)
-	suite.Require().NoErrorf(err, "unable to delete parcel with id=%d, err=%v", id, err)
+	suite.Require().NoErrorf(err, "unable to delete parcel with id=%d, err=%w", id, err)
 
 	// проверьте, что посылку больше нельзя получить из БД
 	_, err = store.Get(id)
-	suite.Require().Errorf(err, "got parcel id=%d after deletion", id)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			suite.Require().Errorf(err, "parcel id=%d was not deleted", id)
+		}
+	}
 }
 
 // TestSetAddress проверяет обновление адреса
-func (suite *ParcelTestSuite) TestSetAddress() { //t *testing.T) {
-	// prepare
-	//db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
-	//require.NoErrorf(t, err, "unable to open DBMS connection, err=%v", err)
-	//defer db.Close()
-
+func (suite *ParcelTestSuite) TestSetAddress() {
 	store := NewParcelStore(suite.db)
 	expectedParcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	id, err := store.Add(expectedParcel)
-	suite.Require().NoErrorf(err, "unable to add new parcel, err=%v", err)
-	suite.Require().Greaterf(id, 0, "invalid parcel id=%d", id)
+	suite.Require().NoErrorf(err, "unable to add new parcel, err=%w", err)
+	suite.Require().NotEmptyf(id, "invalid parcel id=%d", id)
 
 	// set address
 	// обновите адрес, убедитесь в отсутствии ошибки
 	newAddress := "new test address"
 	err = store.SetAddress(id, newAddress)
-	suite.Require().NoErrorf(err, "unable to set address, err=%v", err)
+	suite.Require().NoErrorf(err, "unable to set address, err=%w", err)
 
 	// check
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	actualParsel, err := store.Get(id)
-	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%v", id, err)
+	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%w", id, err)
 	suite.Assert().Equal(newAddress, actualParsel.Address)
 }
 
 // TestSetStatus проверяет обновление статуса
-func (suite *ParcelTestSuite) TestSetStatus() { //t *testing.T) {
-	// prepare
-	//db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
-	//require.NoErrorf(t, err, "unable to open DBMS connection, err=%v", err)
-	//defer db.Close()
-
+func (suite *ParcelTestSuite) TestSetStatus() {
 	store := NewParcelStore(suite.db)
 	expectedParcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 	id, err := store.Add(expectedParcel)
-	suite.Require().NoErrorf(err, "unable to add new parcel, err=%v", err)
-	suite.Require().Greaterf(id, 0, "invalid parcel id=%d", id)
+	suite.Require().NoErrorf(err, "unable to add new parcel, err=%w", err)
+	suite.Require().NotEmptyf(id, "invalid parcel id=%d", id)
 
 	// set status
 	// обновите статус, убедитесь в отсутствии ошибки
 	err = store.SetStatus(id, ParcelStatusSent)
-	suite.Require().NoErrorf(err, "unable to set status, err=%v", err)
+	suite.Require().NoErrorf(err, "unable to set status, err=%w", err)
 
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
 	actualParsel, err := store.Get(id)
-	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%v", id, err)
+	suite.Require().NoErrorf(err, "unable to get parcel with id=%d, err=%w", id, err)
 	suite.Assert().Equal(ParcelStatusSent, actualParsel.Status)
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
-func (suite *ParcelTestSuite) TestGetByClient() { //t *testing.T) {
-	// prepare
-	//db, err := sql.Open("sqlite", "tracker.db") // настройте подключение к БД
-	//require.NoErrorf(t, err, "unable to open DBMS connection, err=%v", err)
-	//defer db.Close()
-
+func (suite *ParcelTestSuite) TestGetByClient() {
 	store := NewParcelStore(suite.db)
 
 	parcels := []Parcel{
@@ -172,8 +156,8 @@ func (suite *ParcelTestSuite) TestGetByClient() { //t *testing.T) {
 	for i := 0; i < len(parcels); i++ {
 		// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 		id, err := store.Add(parcels[i])
-		suite.Require().NoErrorf(err, "unable to add new parcel, err=%v", err)
-		suite.Require().Greaterf(id, 0, "invalid parcel id=%d", id)
+		suite.Require().NoErrorf(err, "unable to add new parcel, err=%w", err)
+		suite.Require().NotEmptyf(id, "invalid parcel id=%d", id)
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
@@ -187,9 +171,9 @@ func (suite *ParcelTestSuite) TestGetByClient() { //t *testing.T) {
 	// убедитесь в отсутствии ошибки
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 	storedParcels, err := store.GetByClient(client)
-	fmt.Printf("storedParcels: len=%d, %v\n", len(storedParcels), storedParcels)
+	fmt.Printf("storedParcels: len=%d, %q\n", len(storedParcels), storedParcels)
 
-	suite.Require().NoErrorf(err, "unable to get parcel by client id=%id, err=%v", client, err)
+	suite.Require().NoErrorf(err, "unable to get parcel by client id=%id, err=%w", client, err)
 	suite.Assert().Equal(len(storedParcels), len(parcelMap))
 
 	// check

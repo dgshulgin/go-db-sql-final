@@ -177,7 +177,3 @@ func main() {
 		return
 	}
 }
-
-//func NewParcelStore(db *sql.DB) {
-//	panic("unimplemented")
-//}

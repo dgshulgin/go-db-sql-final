@@ -26,12 +26,12 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 		sql.Named("address", p.Address),
 		sql.Named("createdat", p.CreatedAt))
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("add parcel failed with: %w", err)
 	}
 
 	number, err := res.LastInsertId()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("unable to get Id of last added parcel: %w", err)
 	}
 	// верните идентификатор последней добавленной записи
 	return int(number), nil
@@ -44,14 +44,13 @@ const (
 func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
-
 	row := s.db.QueryRow(sqlSelectByParcelId, sql.Named("number", number))
 
 	// заполните объект Parcel данными из таблицы
 	p := Parcel{}
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
-		return p, err
+		return p, fmt.Errorf("unable to parse last QueryRow: %w", err)
 	}
 
 	return p, nil
@@ -64,10 +63,9 @@ const (
 func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 	// реализуйте чтение строк из таблицы parcel по заданному client
 	// здесь из таблицы может вернуться несколько строк
-
 	rows, err := s.db.Query(sqlSelectByClientId, sql.Named("client", client))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to query row: %w", err)
 	}
 	defer rows.Close()
 
@@ -78,7 +76,7 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		var p Parcel
 		err = rows.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 		if err != nil {
-			return res, err
+			return res, fmt.Errorf("unable to parse last Query: %w", err)
 		}
 		res = append(res, p)
 	}
@@ -106,13 +104,12 @@ const (
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
 	// менять адрес можно только если значение статуса registered
-
 	parcel, err := s.Get(number)
 	if err != nil {
 		return err
 	}
 
-	if !strings.EqualFold(parcel.Status, "registered") {
+	if !strings.EqualFold(parcel.Status, ParcelStatusRegistered) {
 		return fmt.Errorf("unable to change address for parcel id=%d with status=%s", parcel.Number, parcel.Status)
 	}
 
@@ -128,7 +125,6 @@ const (
 func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
-
 	parcel, err := s.Get(number)
 	if err != nil {
 		return err
@@ -144,7 +140,7 @@ func (s ParcelStore) Delete(number int) error {
 
 	_, err = s.db.Exec(sqlDeleteById, sql.Named("number", number))
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to delete parcel: %w", err)
 	}
 
 	return nil
